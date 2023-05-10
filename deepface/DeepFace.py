@@ -391,6 +391,7 @@ def find(
     align=True,
     normalization="base",
     silent=False,
+    drop_rejected=True,
 ):
 
     """
@@ -418,6 +419,10 @@ def find(
             dlib or mediapipe
 
             silent (boolean): disable some logging and progress bars
+            
+            drop_rejected (boolean): Toggle if the output should inclued just accepted/recognized
+            faces or all faces. If False add column (under_rec_thresh) to output DataFrame
+            showing if under threshold or not
 
     Returns:
             This function returns list of pandas data frame. Each item of the list corresponding to
@@ -581,7 +586,12 @@ def find(
 
         threshold = dst.findThreshold(model_name, distance_metric)
         result_df = result_df.drop(columns=[f"{model_name}_representation"])
-        result_df = result_df[result_df[f"{model_name}_{distance_metric}"] <= threshold]
+        
+        if drop_rejected:
+            result_df = result_df[result_df[f"{model_name}_{distance_metric}"] <= threshold]
+        else:
+            result_df["under_rec_thresh"] = result_df[f"{model_name}_{distance_metric}"] <= threshold
+        
         result_df = result_df.sort_values(
             by=[f"{model_name}_{distance_metric}"], ascending=True
         ).reset_index(drop=True)
